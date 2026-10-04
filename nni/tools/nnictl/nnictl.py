@@ -4,7 +4,7 @@
 import argparse
 import logging
 import os
-import pkg_resources
+from importlib import metadata
 from colorama import init
 from .common_utils import print_error
 from .launcher import create_experiment, resume_experiment, view_experiment
@@ -192,8 +192,8 @@ if os.environ.get('COVERAGE_PROCESS_START'):
 def nni_info(*args):
     if args[0].version:
         try:
-            print(pkg_resources.get_distribution('nni').version)
-        except pkg_resources.ResolutionError:
+            print(metadata.version('nni'))
+        except metadata.PackageNotFoundError:
             print_error('Get version failed, please use `pip3 list | grep nni` to check nni version!')
     else:
         print('Please run "nnictl {positional argument} --help" to see nnictl guidance.')

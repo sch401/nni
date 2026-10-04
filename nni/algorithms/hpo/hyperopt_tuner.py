@@ -36,7 +36,9 @@ def json2space(in_x, name=NodeType.ROOT):
             _type = in_x[NodeType.TYPE]
             name = name + '-' + _type
             _value = json2space(in_x[NodeType.VALUE], name=name)
-            if _type == 'choice':
+            if _type in ('uniform', 'quniform', 'loguniform', 'qloguniform') and _value[0] == _value[1]:
+                out_y = hp.hp.choice(name, [_value[0]])
+            elif _type == 'choice':
                 out_y = hp.hp.choice(name, _value)
             elif _type == 'randint':
                 out_y = hp.hp.randint(name, _value[1] - _value[0])
@@ -69,7 +71,9 @@ def json2parameter(in_x, parameter, name=NodeType.ROOT):
         if NodeType.TYPE in in_x.keys():
             _type = in_x[NodeType.TYPE]
             name = name + '-' + _type
-            if _type == 'choice':
+            if _type in ('uniform', 'quniform', 'loguniform', 'qloguniform') and in_x[NodeType.VALUE][0] == in_x[NodeType.VALUE][1]:
+                out_y = in_x[NodeType.VALUE][0]
+            elif _type == 'choice':
                 _index = parameter[name]
                 out_y = {
                     NodeType.INDEX:
@@ -123,6 +127,8 @@ def json2vals(in_x, vals, out_y, name=NodeType.ROOT):
                           name=name + '[%d]' % _index)
             if _type == 'randint':
                 out_y[name] -= in_x[NodeType.VALUE][0]
+            if _type in ('uniform', 'quniform', 'loguniform', 'qloguniform') and in_x[NodeType.VALUE][0] == in_x[NodeType.VALUE][1]:
+                out_y[name] = 0
         else:
             for key in in_x.keys():
                 json2vals(in_x[key], vals[key], out_y,
@@ -346,7 +352,7 @@ class HyperoptTuner(Tuner):
         for key in domain.params:
             if key in [NodeType.VALUE, NodeType.INDEX]:
                 continue
-            if key not in vals or vals[key] is None or vals[key] == []:
+            if key not in vals or vals[key] is None or np.size(vals[key]) == 0:
                 idxs[key] = vals[key] = []
             else:
                 idxs[key] = [new_id]
@@ -462,7 +468,7 @@ class HyperoptTuner(Tuner):
             _params = trial_info["parameter"]
             assert "value" in trial_info
             _value = trial_info['value']
-            if not _value:
+            if _value is None:
                 logger.info("Useless trial data, value is %s, skip this trial data.", _value)
                 continue
             self.supplement_data_num += 1

@@ -26,7 +26,7 @@ export declare interface WsConnection {
 export class WsConnection extends EventEmitter {
     private closing: boolean = false;
     private commandEmitter: EventEmitter;
-    private heartbeatTimer: NodeJS.Timer | null = null;
+    private heartbeatTimer: NodeJS.Timeout | null = null;
     private log: Logger;
     private missingPongs: number = 0;
 

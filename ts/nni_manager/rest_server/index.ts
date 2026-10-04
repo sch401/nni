@@ -61,7 +61,7 @@ export class RestServer {
         const app = globals.rest.getExpressApp();
         app.use('/' + this.urlPrefix, mainRouter());
         app.use('/' + this.urlPrefix, fallbackRouter());
-        app.all('*', (_req: Request, res: Response) => { res.status(404).send(`Outside prefix "/${this.urlPrefix}"`); });
+        app.all('/{*path}', (_req: Request, res: Response) => { res.status(404).send(`Outside prefix "/${this.urlPrefix}"`); });
         this.server = app.listen(this.port);
 
         const deferred = new Deferred<void>();
@@ -112,7 +112,7 @@ function mainRouter(): Router {
     // The REST API path "/logs" does not match file system path "/log".
     // Here we use an additional router to workaround this problem.
     const logRouter = Router();
-    logRouter.get('*', express.static(globals.paths.logDirectory));
+    logRouter.get('/{*path}', express.static(globals.paths.logDirectory));
     router.use('/logs', logRouter);
 
     /* NAS model visualization */
@@ -128,13 +128,13 @@ function fallbackRouter(): Router {
     router.get('/api/v1/nni/check-status', (_req, res) => { res.send('INITIALIZING'); });
 
     /* Web UI */
-    router.get('*', express.static(webuiPath));
+    router.get('/{*path}', express.static(webuiPath));
     // React Router handles routing inside the browser. We must send index.html to all routes.
     // path.resolve() is required by Response.sendFile() API.
-    router.get('*', (_req: Request, res: Response) => { res.sendFile(path.join(webuiPath, 'index.html')); });
+    router.get('/{*path}', (_req: Request, res: Response) => { res.sendFile(path.join(webuiPath, 'index.html')); });
 
     /* 404 as catch-all */
-    router.all('*', (_req: Request, res: Response) => { res.status(404).send('Not Found'); });
+    router.all('/{*path}', (_req: Request, res: Response) => { res.status(404).send('Not Found'); });
 
     // TODO: websocket 404
 
@@ -144,7 +144,7 @@ function fallbackRouter(): Router {
 function netronProxy(): Router {
     const router = Router();
     const proxy = httpProxy.createProxyServer();
-    router.all('*', (req: Request, res: Response): void => {
+    router.all('/{*path}', (req: Request, res: Response): void => {
         delete req.headers.host;
         proxy.web(req, res, { changeOrigin: true, target: netronUrl });
     });

@@ -68,7 +68,7 @@ export class HttpChannelServer implements CommandChannelServer {
     }
 
     private handleGet(request: Request, response: Response): void {
-        const channelId = request.params['channel'];
+        const channelId = (request.params['channel'] as string);
         const promise = this.getOutgoingQueue(channelId).asyncPop(timeoutMilliseconds);
         promise.then(command => {
             if (command === null) {
@@ -85,7 +85,7 @@ export class HttpChannelServer implements CommandChannelServer {
             return;
         }
 
-        const channelId = request.params['channel'];
+        const channelId = (request.params['channel'] as string);
         const command = request.body;
         this.emitter.emit('receive', channelId, command);
         response.send();

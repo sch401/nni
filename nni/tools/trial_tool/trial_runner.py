@@ -11,7 +11,7 @@ import time
 import traceback
 from datetime import datetime, timedelta
 
-import pkg_resources
+from importlib import metadata
 
 from .gpu import collect_gpu_usage
 
@@ -102,8 +102,8 @@ def trial_runner_help_info(*args):
 
 def check_version(args):
     try:
-        trial_runner_version = pkg_resources.get_distribution('nni').version
-    except pkg_resources.ResolutionError:
+        trial_runner_version = metadata.version('nni')
+    except metadata.PackageNotFoundError:
         # package nni does not exist, try nni-tool package
         nni_log(LogType.Error, 'Package nni does not exist!')
         os._exit(1)

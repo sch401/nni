@@ -33,6 +33,8 @@ import { createDispatcherInterface, IpcInterface } from './ipcInterface';
  * NNIManager which implements Manager interface
  */
 class NNIManager implements Manager {
+    private readonly endedTrialIds = new Set<string>();
+    private readonly receivedFinalMetrics = new Set<string>();
     private pollInterval: number; // for unittest to modify the polling interval
     private trainingService!: TrainingService;
     private dispatcher: IpcInterface | undefined;
@@ -626,6 +628,7 @@ class NNIManager implements Manager {
                 case 'SUCCEEDED':
                 case 'USER_CANCELED':
                 case 'EARLY_STOPPED':
+                    this.endedTrialIds.add(trialJobId);
                     this.trialJobs.delete(trialJobId);
                     finishedTrialJobNum++;
                     hyperParams = trialJobDetail.form.hyperParameters.value;
@@ -639,6 +642,7 @@ class NNIManager implements Manager {
                 case 'SYS_CANCELED':
                     // In the current version, we do not retry
                     // TO DO: push this job to queue for retry
+                    this.endedTrialIds.add(trialJobId);
                     this.trialJobs.delete(trialJobId);
                     finishedTrialJobNum++;
                     hyperParams = trialJobDetail.form.hyperParameters.value;
@@ -803,8 +807,23 @@ class NNIManager implements Manager {
 
     private async onTrialJobMetrics(metric: TrialJobMetric): Promise<void> {
         this.log.debug('NNIManager received trial job metrics:', metric);
-        if (this.trialJobs.has(metric.id)) {
-            await this.dataStore.storeMetricData(metric.id, metric.data);
+        if (this.trialJobs.has(metric.id) || this.endedTrialIds.has(metric.id)) {
+            const payload = JSON.parse(metric.data);
+            const finalKey = `${metric.id}:${payload.parameter_id}`;
+            if (payload.type === 'FINAL') {
+                if (this.receivedFinalMetrics.has(finalKey)) {
+                    return;
+                }
+                this.receivedFinalMetrics.add(finalKey);
+            }
+            try {
+                await this.dataStore.storeMetricData(metric.id, metric.data);
+            } catch (error) {
+                if (payload.type === 'FINAL') {
+                    this.receivedFinalMetrics.delete(finalKey);
+                }
+                throw error;
+            }
             if (this.dispatcher === undefined) {
                 throw new Error('Error: tuner has not been setup');
             }

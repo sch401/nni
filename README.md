@@ -1,3 +1,7 @@
+> **Unofficial Python 3.14 / PyTorch fork:** Windows local HPO fixes, dependency updates,
+> and four concurrent trial validation are described in [the fork notes](docs/PYTHON314_FORK.md).
+> These changes are not an upstream Microsoft release. Built wheels are not stored in this repository.
+
 <div align="center">
 <img src="docs/img/nni_logo.png" width="600"/>
 </div>

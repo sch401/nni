@@ -24,7 +24,7 @@ import traceback
 from zipfile import ZipFile
 
 
-node_version = 'v18.15.0'
+node_version = 'v26.10.0'
 
 def _print(*args, color='cyan'):
     color_code = {'yellow': 33, 'cyan': 36}[color]
@@ -206,14 +206,15 @@ def compile_ts(release):
     Use npm to download dependencies and compile TypeScript code.
     """
     _print('Building NNI manager')
-    _npm('ts/nni_manager', 'install')
+    _npm('ts/nni_manager', 'ci', '--legacy-peer-deps', '--no-audit', '--no-fund')
+    _npm('ts/nni_manager', 'install-scripts', 'approve', 'sqlite3', 'ssh2', 'cpu-features')
     _npm('ts/nni_manager', 'run', 'build')
     # todo: I don't think these should be here
     shutil.rmtree('ts/nni_manager/dist/config', ignore_errors=True)
     shutil.copytree('ts/nni_manager/config', 'ts/nni_manager/dist/config')
 
     _print('Building web UI')
-    _npm('ts/webui', 'install')
+    _npm('ts/webui', 'ci', '--legacy-peer-deps', '--no-audit', '--no-fund')
     if release:
         _npm('ts/webui', 'run', 'release')
     else:
@@ -270,23 +271,21 @@ def copy_nni_node(version):
                 shutil.copytree(subsrc, subdst)
             else:
                 shutil.copy2(subsrc, subdst)
-    shutil.copyfile('ts/nni_manager/package-lock.json', 'nni_node/package-lock.lock')
-    Path('nni_node/nni_manager.tsbuildinfo').unlink()
+    shutil.copyfile('ts/nni_manager/package-lock.json', 'nni_node/package-lock.json')
+    Path('nni_node/nni_manager.tsbuildinfo').unlink(missing_ok=True)
 
     package_json = json.load(open('ts/nni_manager/package.json'))
+    package_json.pop('devDependencies', None)
     if version:
         while len(version.split('.')) < 3:  # node.js semver requires at least three parts
             version = version + '.0'
         package_json['version'] = version
     json.dump(package_json, open('nni_node/package.json', 'w'), indent=2)
 
-    if sys.platform == 'win32':
-        # On Windows, manually install node-gyp for sqlite3.
-        _npm('ts/nni_manager', 'install', '--global', 'node-gyp')
-
     # reinstall without development dependencies
     prod_path = Path('nni_node').resolve()
-    _npm(str(prod_path), 'install', '--omit', 'dev')
+    _npm(str(prod_path), 'install', '--omit', 'dev', '--no-audit', '--no-fund')
+    _npm(str(prod_path), 'install-scripts', 'approve', 'sqlite3', 'ssh2', 'cpu-features')
 
     shutil.copytree('ts/webui/build', 'nni_node/static')
 

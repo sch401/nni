@@ -8,6 +8,7 @@ import os
 import random
 import shutil
 import sys
+from tempfile import TemporaryDirectory
 from collections import deque
 from unittest import TestCase, main
 
@@ -48,6 +49,8 @@ class BuiltinTunersTestCase(TestCase):
     """
 
     def setUp(self):
+        self._checkpoint_dir = TemporaryDirectory(prefix='nni-pbt-test-')
+        self.addCleanup(self._checkpoint_dir.cleanup)
         self.test_round = 3
         self.params_each_round = 50
         self.exhaustive = False
@@ -210,7 +213,7 @@ class BuiltinTunersTestCase(TestCase):
                 "_value": ["cat", "dog", "elephant", "cow", "sheep", "panda"]
             }
         }
-        all_checkpoint_dir = os.path.expanduser("~/nni/checkpoint/test/")
+        all_checkpoint_dir = self._checkpoint_dir.name
         population_size = 4
         # ===import data at the beginning===
         tuner = PBTTuner(

@@ -92,7 +92,7 @@ function batchFormat(
                             curIndent,
                             indent,
                             '{}',
-                            Object.keys(obj).map(() => iter.next().value)
+                            Object.keys(obj).map(() => iter.next().value!)
                         )
                     );
                 }

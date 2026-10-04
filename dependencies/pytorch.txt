@@ -1,0 +1,2 @@
+# Minimal PyTorch dependency for local HPO; no TensorFlow installation required.
+torch==2.14.1

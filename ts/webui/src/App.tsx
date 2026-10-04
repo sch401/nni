@@ -72,7 +72,7 @@ interface AppState {
     timerIdList: number[];
 }
 
-class App extends React.Component<{}, AppState> {
+class App extends React.Component<React.PropsWithChildren<{}>, AppState> {
     private timerId = 0;
 
     constructor(props: {}) {

@@ -9,7 +9,7 @@ ppo_tuner.py including:
 import copy
 import logging
 import numpy as np
-from gym import spaces
+from gymnasium import spaces
 from schema import Schema, Optional
 
 import nni

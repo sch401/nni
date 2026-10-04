@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import * as timersPromises from 'timers/promises';
 
-import glob from 'glob';
+import { globSync } from 'glob';
 import lockfile from 'lockfile';
 
 const lockStale: number = 2000;
@@ -14,7 +14,7 @@ const retry: number = 100;
 export function withLockNoWait<T>(protectedFile: string, func: () => T): T {
     const lockName = path.join(path.dirname(protectedFile), path.basename(protectedFile) + `.lock.${process.pid}`);
     const lockPath = path.join(path.dirname(protectedFile), path.basename(protectedFile) + '.lock.*');
-    const lockFileNames: string[] = glob.sync(lockPath);
+    const lockFileNames: string[] = globSync(lockPath);
     const canLock: boolean = lockFileNames.map((fileName) => {
         return fs.existsSync(fileName) && Date.now() - fs.statSync(fileName).mtimeMs < lockStale;
     }).filter(unexpired=>unexpired === true).length === 0;
@@ -22,9 +22,11 @@ export function withLockNoWait<T>(protectedFile: string, func: () => T): T {
         throw new Error('File has been locked.');
     }
     lockfile.lockSync(lockName, { stale: lockStale });
-    const result = func();
-    lockfile.unlockSync(lockName);
-    return result;
+    try {
+        return func();
+    } finally {
+        lockfile.unlockSync(lockName);
+    }
 }
 
 export async function withLock<T>(protectedFile: string, func: () => T): Promise<T> {

@@ -114,12 +114,13 @@ class SimplePreemptiveLock(filelock.SoftFileLock):
         except (IOError, OSError):
             pass
         else:
-            self._lock_file_fd = fd
+            self._context.lock_file_fd = fd
         return None
 
     def _release(self):
-        os.close(self._lock_file_fd)
-        self._lock_file_fd = None
+        fd = self._context.lock_file_fd
+        self._context.lock_file_fd = None
+        os.close(fd)
         try:
             os.remove(self._lock_file_name)
         except OSError:

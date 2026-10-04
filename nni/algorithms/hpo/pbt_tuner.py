@@ -165,7 +165,8 @@ class PBTClassArgsValidator(ClassArgsValidator):
             'optimize_mode': self.choices('optimize_mode', 'maximize', 'minimize'),
             Optional('all_checkpoint_dir'): str,
             Optional('population_size'): self.range('population_size', int, 0, 99999),
-            Optional('factors'): float,
+            Optional('factor'): float,
+            Optional('resample_probability'): float,
             Optional('fraction'): float,
         }).validate(kwargs)
 
@@ -425,6 +426,9 @@ class PBTTuner(Tuner):
         logger.info('Get one trial result, id = %d, value = %s', parameter_id, value)
         value = extract_scalar_reward(value)
         trial_info = self.running.pop(parameter_id, None)
+        if trial_info is None:
+            logger.warning('Ignoring duplicate or ended parameter_id %s', parameter_id)
+            return
         trial_info.score = value
         self.finished.append(trial_info)
         self.finished_trials += 1
@@ -451,6 +455,8 @@ class PBTTuner(Tuner):
         else:
             value = float('-inf')
         trial_info = self.running.pop(parameter_id, None)
+        if trial_info is None:
+            return
         trial_info.score = value
         self.finished.append(trial_info)
         self.finished_trials += 1
@@ -482,7 +488,7 @@ class PBTTuner(Tuner):
             _params = trial_info["parameter"]
             _value = trial_info['value']
             # assign fake value for failed trials
-            if not _value:
+            if _value is None:
                 logger.info("Useless trial data, value is %s, skip this trial data.", _value)
                 _value = float('inf') if self.optimize_mode == OptimizeMode.Minimize else float('-inf')
             _value = extract_scalar_reward(_value)

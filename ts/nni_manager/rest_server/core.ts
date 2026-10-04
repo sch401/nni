@@ -40,7 +40,7 @@ export class RestServerCore {
         const app = globals.rest.getExpressApp();
         app.use('/' + this.urlPrefix, globals.rest.getExpressRouter());
         app.all('/' + this.urlPrefix, (_req, res) => { res.status(404).send('Not Found'); });
-        app.all('*', (_req, res) => { res.status(404).send(`Outside prefix "/${this.urlPrefix}"`); });
+        app.all('/{*path}', (_req, res) => { res.status(404).send(`Outside prefix "/${this.urlPrefix}"`); });
         this.server = app.listen(this.port);
 
         const deferred = new Deferred<void>();

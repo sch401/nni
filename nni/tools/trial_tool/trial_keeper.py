@@ -13,7 +13,7 @@ import threading
 import time
 from subprocess import Popen
 
-import pkg_resources
+from importlib import metadata
 from pyhdfs import HdfsClient
 
 from .constants import (LOG_DIR, MULTI_PHASE, NNI_EXP_ID, NNI_PLATFORM,
@@ -135,8 +135,8 @@ def trial_keeper_help_info(*args):
 
 def check_version(args):
     try:
-        trial_keeper_version = pkg_resources.get_distribution('nni').version
-    except pkg_resources.ResolutionError:
+        trial_keeper_version = metadata.version('nni')
+    except metadata.PackageNotFoundError:
         # package nni does not exist, try nni-tool package
         nni_log(LogType.Error, 'Package nni does not exist!')
         os._exit(1)

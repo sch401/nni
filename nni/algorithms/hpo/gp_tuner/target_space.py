@@ -242,7 +242,7 @@ class TargetSpace():
                     _bound['_value'], self._random_state)
             elif _bound['_type'] == 'randint':
                 params[col] = self._random_state.randint(
-                    _bound['_value'][0], _bound['_value'][1], size=1)
+                    _bound['_value'][0], _bound['_value'][1])
             elif _bound['_type'] == 'uniform':
                 params[col] = parameter_expressions.uniform(
                     _bound['_value'][0], _bound['_value'][1], self._random_state)

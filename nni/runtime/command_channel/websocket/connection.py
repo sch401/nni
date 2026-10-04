@@ -71,7 +71,7 @@ class WsConnection:
             return
 
         try:
-            _wait(self._ws.close(code or 4000, reason))
+            _wait(self._ws.close(code or 4000, reason or ''))
             _logger.debug('Connection closed by client.')
         except Exception as e:
             _logger.warning(f'Failed to close connection: {repr(e)}')

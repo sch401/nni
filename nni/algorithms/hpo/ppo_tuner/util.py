@@ -11,7 +11,7 @@ import multiprocessing
 import numpy as np
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
-from gym.spaces import Discrete, Box, MultiDiscrete
+from gymnasium.spaces import Discrete, Box, MultiDiscrete
 
 def set_global_seeds(i):
     """set global seeds"""

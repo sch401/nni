@@ -72,6 +72,7 @@ process.on('SIGINT', () => { globals.shutdown.initiate('SIGINT'); });
 start().then(() => {
     logger.debug('start() returned.');
 }).catch((error) => {
+    console.error('Failed to start:', error);
     try {
         logger.error('Failed to start:', error);
     } catch (loggerError) {

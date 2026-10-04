@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import { EventEmitter } from 'events';
+import { randomUUID } from 'crypto';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { setTimeout } from 'timers/promises';
@@ -45,7 +46,6 @@ export class V3asV1 implements TrainingService {
     private startDeferred: Deferred<void> = new Deferred();
 
     private trialJobs: Record<string, MutableTrialJobDetail> = {};
-    private parameters: Parameter[] = [];
     private allocatedParameters: Map<string, Parameter> = new Map();
 
     private environments: EnvironmentInfo[] = [];
@@ -82,6 +82,7 @@ export class V3asV1 implements TrainingService {
 
         if (form.id && form.envId) {  // resume trial
             submitTime = Date.now();
+            this.allocatedParameters.set(form.id, form.hyperParameters.value);
             try {
                 trialId = await this.v3.createTrial(
                     form.envId,
@@ -100,12 +101,9 @@ export class V3asV1 implements TrainingService {
             } catch (error) {
                 logger.error('Exception when resuming trial', form, ':', error);
             }
-        }
-
-        if (trialId === null) {
-            this.parameters.push(form.hyperParameters.value);
-        } else {
-            this.allocatedParameters.set(trialId, form.hyperParameters.value);
+            if (trialId === null) {
+                this.allocatedParameters.delete(form.id);
+            }
         }
 
         while (trialId === null) {
@@ -115,10 +113,16 @@ export class V3asV1 implements TrainingService {
                 continue;
             }
             submitTime = Date.now();
+            const requestedId = randomUUID().replaceAll('-', '');
+            this.allocatedParameters.set(requestedId, form.hyperParameters.value);
             try {
-                trialId = await this.v3.createTrial(envId, this.config.trialCommand, 'trial_code', form.sequenceId);
+                trialId = await this.v3.createTrial(envId, this.config.trialCommand, 'trial_code', form.sequenceId, requestedId);
             } catch (error) {
                 logger.error('Exception when create trial', form, ':', error);
+            }
+            if (trialId === null) {
+                this.allocatedParameters.delete(requestedId);
+                await setTimeout(1000);
             }
         }
 
@@ -159,12 +163,18 @@ export class V3asV1 implements TrainingService {
     }
 
     public async cancelTrialJob(trialJobId: string, isEarlyStopped?: boolean): Promise<void> {
+        const trial = this.trialJobs[trialJobId];
+        if (!trial) {
+            throw new Error(`Trial not found: ${trialJobId}`);
+        }
+        trial.isEarlyStopped = Boolean(isEarlyStopped);
         try {
             await this.v3.stopTrial(trialJobId);
         } catch (error) {
+            delete trial.isEarlyStopped;
             logger.error('Exception when cancel trial', trialJobId, ':', error);
+            throw error;
         }
-        this.trialJobs[trialJobId].isEarlyStopped = Boolean(isEarlyStopped);
     }
 
     public async getTrialFile(trialJobId: string, fileName: string): Promise<Buffer | string> {
@@ -237,10 +247,8 @@ export class V3asV1 implements TrainingService {
             if (this.allocatedParameters.has(trialId)) {
                 await this.v3.sendParameter(trialId, this.allocatedParameters.get(trialId)!);
                 this.allocatedParameters.delete(trialId);
-            } else if (this.parameters.length > 0) {
-                await this.v3.sendParameter(trialId, this.parameters.shift()!);
             } else {
-                logger.error('No parameters available');
+                logger.error('No parameters allocated for trial', trialId);
             }
         });
         this.v3.onMetric(async (trialId, metric) => {
@@ -256,12 +264,12 @@ export class V3asV1 implements TrainingService {
         });
         this.v3.onTrialEnd(async (trialId, timestamp, exitCode) => {
             const trial = this.trialJobs[trialId];
-            if (exitCode === 0) {
+            if (trial.isEarlyStopped !== undefined) {
+                trial.status = trial.isEarlyStopped ? 'EARLY_STOPPED' : 'USER_CANCELED';
+            } else if (exitCode === 0) {
                 trial.status = 'SUCCEEDED';
             } else if (exitCode !== null) {
                 trial.status = 'FAILED';
-            } else if (trial.isEarlyStopped) {
-                trial.status = 'EARLY_STOPPED';
             } else {
                 trial.status = 'USER_CANCELED';
             }

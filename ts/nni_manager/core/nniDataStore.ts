@@ -160,6 +160,10 @@ class NNIDataStore implements DataStore {
                 if (job.hyperParameters.length === 1 && job.finalMetricData.length === 1) {
                     // optimization for non-multi-phase case
                     const parameters: HyperParameterFormat = <HyperParameterFormat>JSON.parse(job.hyperParameters[0]);
+                    if (parameters.parameter_id !== Number(job.finalMetricData[0].parameterId)) {
+                        this.log.warning('Skipping mismatched parameter and final metric:', job.trialJobId);
+                        continue;
+                    }
                     const oneEntry: ExportedDataFormat = {
                         parameter: parameters.parameters,
                         value: JSON.parse(job.finalMetricData[0].data),
@@ -179,10 +183,10 @@ class NNIDataStore implements DataStore {
                     }
                     paraMap.forEach((value: Record<string, any>, key: number) => {
                         const metricValue: Record<string, any> | undefined = metricMap.get(key);
-                        if (metricValue) {
+                        if (metricMap.has(key)) {
                             const oneEntry: ExportedDataFormat = {
                                 parameter: value,
-                                value: metricValue,
+                                value: metricValue!,
                                 trialJobId: job.trialJobId
                             };
                             exportedData.push(oneEntry);

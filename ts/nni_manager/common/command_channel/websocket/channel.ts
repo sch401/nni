@@ -41,7 +41,7 @@ export class WsChannel implements CommandChannel {
     private heartbeatInterval: number | null = null;
     private log: Logger;
     private queue: QueuedCommand[] = [];
-    private terminateTimer: NodeJS.Timer | null = null;
+    private terminateTimer: NodeJS.Timeout | null = null;
 
     protected emitter: EventEmitter = new EventEmitter();
 

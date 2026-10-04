@@ -95,6 +95,11 @@ class EvolutionTuner(Tuner):
         self.credit = 0 # record the unsatisfied trial requests
         self.send_trial_callback = None
         self.param_ids = deque()
+        self._active_ids = set()
+        self._failed_ids = set()
+        self._completed_ids = set()
+        if population_size < 1:
+            raise ValueError('population_size must be positive')
 
     def update_search_space(self, search_space):
         """
@@ -130,20 +135,28 @@ class EvolutionTuner(Tuner):
         **kwargs
             Not used
         """
-        self.num_running_trials -= 1
+        if parameter_id not in self._active_ids:
+            return
+        self._active_ids.remove(parameter_id)
+        self.num_running_trials = len(self._active_ids)
         logger.info('trial (%d) end', parameter_id)
 
         if not success:
-            self.running_trials.pop(parameter_id)
-            self._random_generate_individual()
+            self._failed_ids.add(parameter_id)
+            if self.running_trials.pop(parameter_id, None) is not None:
+                self._random_generate_individual()
 
-        if self.credit > 1:
+        self._drain_pending()
+
+    def _drain_pending(self):
+        while self.credit > 0 and self.population and self.num_running_trials < self.population_size:
+            if self.send_trial_callback is None:
+                return
             param_id = self.param_ids.popleft()
             config = self._generate_individual(param_id)
             logger.debug('Send new trial (%d, %s) for reducing credit', param_id, config)
             self.send_trial_callback(param_id, config)
             self.credit -= 1
-            self.num_running_trials += 1
 
     def generate_multiple_parameters(self, parameter_id_list, **kwargs):
         """
@@ -173,7 +186,6 @@ class EvolutionTuner(Tuner):
             try:
                 logger.debug("generating param for %s", parameter_id)
                 res = self.generate_parameters(parameter_id, **kwargs)
-                self.num_running_trials += 1
             except nni.NoMoreTrialError:
                 had_exception = True
             if not had_exception:
@@ -239,6 +251,8 @@ class EvolutionTuner(Tuner):
 
         # remove "_index" from config and save params-id
         self.running_trials[parameter_id] = indiv
+        self._active_ids.add(parameter_id)
+        self.num_running_trials = len(self._active_ids)
         config = split_index(indiv.config)
         return config
 
@@ -259,10 +273,7 @@ class EvolutionTuner(Tuner):
         dict
             One newly generated configuration.
         """
-        if not self.population:
-            raise RuntimeError('The population is empty')
-
-        if self.num_running_trials >= self.population_size:
+        if not self.population or self.num_running_trials >= self.population_size:
             logger.warning("No enough trial config, population_size is suggested to be larger than trialConcurrency")
             self.credit += 1
             self.param_ids.append(parameter_id)
@@ -285,18 +296,23 @@ class EvolutionTuner(Tuner):
         """
         reward = extract_scalar_reward(value)
 
+        if parameter_id in self._completed_ids or parameter_id in self._failed_ids:
+            return
         if parameter_id not in self.running_trials:
-            raise RuntimeError('Received parameter_id %s not in running_trials.', parameter_id)
+            logger.warning('Ignoring unknown parameter_id %s', parameter_id)
+            return
 
         # restore the paramsters contains "_index"
         config = self.running_trials[parameter_id].config
         self.running_trials.pop(parameter_id)
+        self._completed_ids.add(parameter_id)
 
         if self.optimize_mode == OptimizeMode.Minimize:
             reward = -reward
 
         indiv = Individual(config=config, result=reward)
         self.population.append(indiv)
+        self._drain_pending()
 
     def import_data(self, data):
         pass

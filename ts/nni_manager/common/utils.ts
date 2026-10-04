@@ -206,7 +206,7 @@ function countFilesRecursively(directory: string): Promise<number> {
 
     const deferred: Deferred<number> = new Deferred<number>();
 
-    let timeoutId: NodeJS.Timer
+    let timeoutId: NodeJS.Timeout
     const delayTimeout: Promise<number> = new Promise((_resolve: any, reject: (reason: Error) => any): void => {
         // Set timeout and reject the promise once reach timeout (5 seconds)
         timeoutId = setTimeout(() => {

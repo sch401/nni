@@ -54,15 +54,16 @@ The platform may also be "macosx_10_9_x86_64" or "win_amd64".
 or setuptools cannot locate JS files which should be packed into wheel.
 """
 
-from distutils.cmd import Command
-from distutils.command.build import build
-from distutils.command.clean import clean
 import glob
 import os
 import shutil
 import sys
+from pathlib import Path
 
 import setuptools
+from setuptools import Command
+from setuptools.command.build import build
+from distutils.command.clean import clean  # setuptools installs this vendored compatibility module
 from setuptools.command.develop import develop
 
 import setup_ts
@@ -118,7 +119,7 @@ def _setup():
 
         data_files = _get_data_files(),
 
-        python_requires = '>=3.7',
+        python_requires = '>=3.14,<3.15',
         install_requires = _read_requirements_txt('dependencies/required.txt'),
         extras_require = {
             'Anneal': _read_requirements_txt('dependencies/required_extra.txt', 'Anneal'),
@@ -128,7 +129,6 @@ def _setup():
             'DNGO': _read_requirements_txt('dependencies/required_extra.txt', 'DNGO'),
             'all': _read_requirements_txt('dependencies/required_extra.txt'),
         },
-        setup_requires = ['requests'],
 
         entry_points = {
             'console_scripts' : [
@@ -154,8 +154,8 @@ def _get_data_files():
 def _find_python_packages():
     packages = []
     for dirpath, dirnames, filenames in os.walk('nni'):
-        if '/__pycache__' not in dirpath and '/.mypy_cache' not in dirpath and '/default_config' not in dirpath:
-            packages.append(dirpath.replace('/', '.'))
+        dirnames[:] = [name for name in dirnames if name not in ('__pycache__', '.mypy_cache', 'default_config')]
+        packages.append('.'.join(Path(dirpath).parts))
     return sorted(packages) + ['nni_assets', 'nni_node']
 
 def _find_requirements_txt():

@@ -164,6 +164,8 @@ class TpeTuner(Tuner):
         self._params = {}                   # parameter_id -> parameters (in internal format)
         self._running_params = {}           # subset of above, that has been submitted but has not yet received loss
         self._history = defaultdict(list)   # parameter key -> list of Record
+        self._completed_ids = set()
+        self._failed_ids = set()
 
     def update_search_space(self, space):
         self.space = format_search_space(space)
@@ -188,18 +190,27 @@ class TpeTuner(Tuner):
         return deformat_parameters(params, self.space)
 
     def receive_trial_result(self, parameter_id, _parameters, value, **kwargs):
+        if parameter_id in self._completed_ids or parameter_id in self._failed_ids:
+            return
+        if parameter_id not in self._params:
+            _logger.warning('Ignoring unknown parameter_id %s', parameter_id)
+            return
         if self.optimize_mode is OptimizeMode.Minimize:
             loss = extract_scalar_reward(value)
         else:
             loss = -extract_scalar_reward(value)
         if self.liar:
             self.liar.update(loss)
-        params = self._running_params.pop(parameter_id)
+        params = self._params[parameter_id]
+        self._running_params.pop(parameter_id, None)
+        self._completed_ids.add(parameter_id)
         for key, value in params.items():
             self._history[key].append(Record(value, loss))
 
     def trial_end(self, parameter_id, _success, **kwargs):
         self._running_params.pop(parameter_id, None)
+        if not _success:
+            self._failed_ids.add(parameter_id)
 
     def import_data(self, data):  # for resuming experiment
         if isinstance(data, str):
@@ -290,7 +301,7 @@ class MeanLiar:  # assume running parameters have average result
         return 0.0 if self._n == 0 else (self._sum / self._n)
 
 def create_liar(liar_type):
-    if liar_type is None or liar_type.lower == 'none':
+    if liar_type is None or liar_type.lower() == 'none':
         return None
     liar_classes = {
         'best': BestLiar,

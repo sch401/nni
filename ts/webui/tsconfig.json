@@ -1,33 +1,42 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2020",
+    "types": ["node", "react", "react-dom"],
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
     ],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@components/*": ["src/components/*"],
-      "@static/*": ["src/static/*"],
-      "@style/*": ["src/static/style/*"],
-      "@model/*": ["src/static/model/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@components/*": [
+        "./src/components/*"
+      ],
+      "@static/*": [
+        "./src/static/*"
+      ],
+      "@style/*": [
+        "./src/static/style/*"
+      ],
+      "@model/*": [
+        "./src/static/model/*"
+      ]
     },
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "downlevelIteration": true,
     "noImplicitAny": false,
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": false,
     "noEmit": true,
-    "jsx": "preserve"
+    "jsx": "react-jsx"
   },
   "include": [
     "src"

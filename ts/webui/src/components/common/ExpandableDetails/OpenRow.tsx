@@ -56,10 +56,10 @@ const OpenRow = (props: OpenRowProps): any => {
         setTimeout(hideMessageInfo, 2000);
     };
 
-    const copyParams = (trial: Trial): void => {
+    const copyParams = async (trial: Trial): Promise<void> => {
         // get copy parameters
         const params = JSON.stringify(reformatRetiariiParameter(trial.parameter as any), null, 4);
-        if (copy.default(params)) {
+        if (await copy.default(params)) {
             getCopyStatus('Successfully copy parameters to clipboard in form of python dict!', 'success');
         } else {
             getCopyStatus('Failed!', 'error');

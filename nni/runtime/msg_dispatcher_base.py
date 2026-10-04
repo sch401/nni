@@ -46,11 +46,9 @@ class MsgDispatcherBase(Recoverable):
         if not command_channel_url.startswith('ws://_unittest_'):
             self._channel.connect()
         self.default_command_queue = Queue()
-        self.assessor_command_queue = Queue()
         # here daemon should be True, because their parent thread is configured as daemon to enable smooth exit of NAS experiment.
         # if daemon is not set, these threads will block the daemon effect of their parent thread.
         self.default_worker = threading.Thread(target=self.command_queue_worker, args=(self.default_command_queue,), daemon=True)
-        self.assessor_worker = threading.Thread(target=self.command_queue_worker, args=(self.assessor_command_queue,), daemon=True)
         self.worker_exceptions = []
 
     def run(self):
@@ -60,7 +58,6 @@ class MsgDispatcherBase(Recoverable):
         _logger.info('Dispatcher started')
 
         self.default_worker.start()
-        self.assessor_worker.start()
 
         if dispatcher_env_vars.NNI_MODE == 'resume':
             self.load_checkpoint()
@@ -79,7 +76,6 @@ class MsgDispatcherBase(Recoverable):
         _logger.info('Dispatcher exiting...')
         self.stopping = True
         self.default_worker.join()
-        self.assessor_worker.join()
         self._channel.disconnect()
 
         _logger.info('Dispatcher terminiated')
@@ -118,19 +114,12 @@ class MsgDispatcherBase(Recoverable):
     def enqueue_command(self, command, data):
         """Enqueue command into command queues
         """
-        if command == CommandType.TrialEnd or (
-                command == CommandType.ReportMetricData and data['type'] == 'PERIODICAL'):
-            self.assessor_command_queue.put((command, data))
-        else:
-            self.default_command_queue.put((command, data))
+        # ponytail: serialize callbacks; slow assessors delay tuning, split only with an ordered lifecycle protocol.
+        self.default_command_queue.put((command, data))
 
         qsize = self.default_command_queue.qsize()
         if qsize >= QUEUE_LEN_WARNING_MARK:
             _logger.warning('default queue length: %d', qsize)
-
-        qsize = self.assessor_command_queue.qsize()
-        if qsize >= QUEUE_LEN_WARNING_MARK:
-            _logger.warning('assessor queue length: %d', qsize)
 
     def process_command(self, command, data):
         _logger.debug('process_command: command: [%s], data: [%s]', command, data)

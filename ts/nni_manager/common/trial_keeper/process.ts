@@ -12,6 +12,7 @@ import child_process, { ChildProcess, SpawnOptions } from 'child_process';
 import events from 'events';
 import fs from 'fs';
 import path from 'path';
+import treeKill from 'tree-kill';
 
 import { Deferred } from 'common/deferred';
 import globals from 'common/globals';
@@ -80,6 +81,7 @@ export class TrialProcess {
             env: this.buildEnv(options),
             stdio: [ 'ignore', stdout, stderr ],
             shell: shell,
+            detached: process.platform !== 'win32',
         };
 
         this.proc = child_process.spawn(options.command, spawnOptions);
@@ -101,7 +103,7 @@ export class TrialProcess {
      *
      *  (FIXME) On Windows, always do force kill.
      *
-     *  (FIXME) This only kills the trial process. If the trial has child processes, they are not touched by NNI.
+     *  Child processes are terminated together with the trial shell.
      *
      *  The returned promise is resolved together with onStop() callback.
      **/
@@ -117,19 +119,44 @@ export class TrialProcess {
         }
 
         if (process.platform === 'win32') {
-            this.proc!.kill();  // FIXME
+            await new Promise<void>((resolve, reject) => {
+                treeKill(this.proc!.pid!, 'SIGKILL', error => {
+                    if (error && !this.stopped.settled) {
+                        reject(error);
+                    } else {
+                        if (error) {
+                            this.log.warning('taskkill returned an error after the trial exited', error);
+                        }
+                        resolve();
+                    }
+                });
+            });
 
         } else {
-            this.proc!.kill('SIGINT');
-            setTimeout(() => {
-                if (!this.stopped.settled) {
+            const pid = this.proc!.pid!;
+            this.killGroup(pid, 'SIGINT');
+            const timer = setTimeout(() => {
+                if (this.proc !== null) {
                     this.log.info(`Failed to terminate in ${timeout ?? 5000} ms, force kill`);
-                    this.proc!.kill('SIGKILL');
+                    this.killGroup(pid, 'SIGKILL');
                 }
             }, timeout ?? 5000);
+            await this.stopped.promise;
+            this.killGroup(pid, 'SIGKILL');
+            clearTimeout(timer);
         }
 
         await this.stopped.promise;
+    }
+
+    private killGroup(pid: number, signal: NodeJS.Signals): void {
+        try {
+            process.kill(-pid, signal);
+        } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
+                throw error;
+            }
+        }
     }
 
     /**

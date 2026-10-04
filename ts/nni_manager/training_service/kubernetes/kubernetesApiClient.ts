@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import {Client1_10, config} from 'kubernetes-client';
+import {Client1_13, config} from 'kubernetes-client';
 import {getLogger, Logger} from 'common/log';
 
 /**
@@ -28,7 +28,7 @@ class GeneralK8sClient {
     protected namespace: string = 'default';
 
     constructor() {
-        this.client = new Client1_10({config: getKubernetesConfig(), version: '1.9'});
+        this.client = new Client1_13({config: getKubernetesConfig(), version: '1.13'});
         this.client.loadSpec();
     }
 
@@ -152,7 +152,7 @@ abstract class KubernetesCRDClient {
     public namespace: string = 'default';
 
     constructor() {
-        this.client = new Client1_10({config: getKubernetesConfig()});
+        this.client = new Client1_13({config: getKubernetesConfig()});
         this.client.loadSpec();
     }
 

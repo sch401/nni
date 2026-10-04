@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import App from './App';
 import { getPrefix } from './static/function';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -11,7 +11,7 @@ import '@style/loading.scss';
 import * as serviceWorker from './serviceWorker';
 const path = getPrefix();
 
-ReactDOM.render(
+createRoot(document.getElementById('root')!).render(
     <Suspense
         fallback={
             <div className='loading'>
@@ -29,9 +29,7 @@ ReactDOM.render(
                 </Route>
             </Routes>
         </Router>
-    </Suspense>,
-
-    document.getElementById('root')
+    </Suspense>
 );
 
 // If you want your app to work offline and load faster, you can change

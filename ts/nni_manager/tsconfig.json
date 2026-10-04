@@ -1,11 +1,12 @@
 {
   "include": [
-      "common/**/*",
-      "core/**/*",
-      "extensions/**/*",
-      "rest_server/**/*",
-      "training_service/**/*",
-      "main.ts"
+    "common/**/*",
+    "core/**/*",
+    "extensions/**/*",
+    "rest_server/**/*",
+    "training_service/**/*",
+    "main.ts",
+    "types/**/*"
   ],
   "compilerOptions": {
     "allowUnreachableCode": false,
@@ -13,7 +14,6 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUnusedParameters": true,
     "strict": true,
-    "baseUrl": ".",
     "module": "CommonJS",
     "typeRoots": [
       "node_modules/@types",
@@ -27,6 +27,12 @@
     "experimentalDecorators": true,
     "target": "ESNext",
     "incremental": true,
-    "tsBuildInfoFile": "dist/nni_manager.tsbuildinfo"
+    "tsBuildInfoFile": "dist/nni_manager.tsbuildinfo",
+    "paths": {
+      "*": [
+        "./*"
+      ]
+    },
+    "skipLibCheck": true
   }
 }

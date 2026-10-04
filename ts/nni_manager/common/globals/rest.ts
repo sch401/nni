@@ -23,9 +23,10 @@ export class RestManager {
         // we don't actually need the app here,
         // but expressWs() must be called before router.ws(), and it requires an app instance
         this.app = express();
-        expressWs(this.app, undefined, { wsOptions: { maxPayload: 4 * 1024 * 1024 * 1024 }});
+        const websocket = expressWs(this.app, undefined, { wsOptions: { maxPayload: 4 * 1024 * 1024 * 1024 }});
 
         this.router = Router();
+        websocket.applyTo(this.router);
         this.router.use(express.json({ limit: '50mb' }));
     }
 

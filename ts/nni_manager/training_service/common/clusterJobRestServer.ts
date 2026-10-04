@@ -105,7 +105,7 @@ export abstract class ClusterJobRestServer extends LegacyRestServer {
 
         router.post(`/update-metrics/${this.expId}/:trialId`, (req: Request, res: Response) => {
             try {
-                this.log.info(`Get update-metrics request, trial job id is ${req.params['trialId']}`);
+                this.log.info(`Get update-metrics request, trial job id is ${(req.params['trialId'] as string)}`);
                 this.log.info('update-metrics body is', req.body);
 
                 this.handleTrialMetrics(req.body.jobId, req.body.metrics);
@@ -124,7 +124,7 @@ export abstract class ClusterJobRestServer extends LegacyRestServer {
                 this.errorMessage = `Version check failed, didn't get version check response from trialKeeper,`
                  + ` please check your NNI version in NNIManager and TrialKeeper!`;
             }
-            const trialLogDir: string = path.join(getExperimentRootDir(), 'trials', req.params['trialId']);
+            const trialLogDir: string = path.join(getExperimentRootDir(), 'trials', (req.params['trialId'] as string));
             mkDirPSync(trialLogDir);
             const trialLogPath: string = path.join(trialLogDir, 'stdout_log_collection.log');
             try {
@@ -133,7 +133,7 @@ export abstract class ClusterJobRestServer extends LegacyRestServer {
                     const metricsContent: any = req.body.msg.match(this.NNI_METRICS_PATTERN);
                     if (metricsContent && metricsContent.groups) {
                         const key: string = 'metrics';
-                        this.handleTrialMetrics(req.params['trialId'], [metricsContent.groups[key]]);
+                        this.handleTrialMetrics((req.params['trialId'] as string), [metricsContent.groups[key]]);
                         skipLogging = true;
                     }
                 }

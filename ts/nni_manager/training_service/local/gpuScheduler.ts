@@ -6,6 +6,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { getLogger, Logger } from 'common/log';
+import globals from 'common/globals';
 import { delay } from 'common/utils';
 import { GPUInfo, GPUSummary } from '../common/gpuData';
 import { execKill, execMkdir, execRemove, execTail, runGpuMetricsCollector } from '../common/util';
@@ -23,7 +24,7 @@ class GPUScheduler {
     constructor() {
         this.stopping = false;
         this.log = getLogger('GPUScheduler');
-        this.gpuMetricCollectorScriptFolder = `${os.tmpdir()}/${os.userInfo().username}/nni/script`;
+        this.gpuMetricCollectorScriptFolder = path.join(os.tmpdir(), os.userInfo().username, 'nni', globals.args.experimentId, 'script');
     }
 
     public async run(): Promise<void> {

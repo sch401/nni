@@ -71,6 +71,8 @@ class MsgDispatcher(MsgDispatcherBase):
         super().__init__(command_channel_url)
         self.tuner = tuner
         self.assessor = assessor
+        self._final_parameter_ids = set()
+        self._failed_parameter_ids = set()
         if assessor is None:
             _logger.debug('Assessor is not configured')
 
@@ -106,7 +108,7 @@ class MsgDispatcher(MsgDispatcherBase):
             self.send(CommandType.NewTrialJob, _pack_parameter(ids[i], params_list[i]))
         # when parameters is None.
         if len(params_list) < len(ids):
-            self.send(CommandType.NoMoreTrialJobs, _pack_parameter(ids[0], ''))
+            self.send(CommandType.NoMoreTrialJobs, '')
 
     def handle_update_search_space(self, data):
         _logger.info('New search space: %s', data)
@@ -175,7 +177,11 @@ class MsgDispatcher(MsgDispatcherBase):
             # The end of the recovered trial is ignored
             return
         trial_job_id = data['trial_job_id']
+        if trial_job_id in _ended_trials:
+            return
         _ended_trials.add(trial_job_id)
+        if data['event'] != 'SUCCEEDED':
+            self._failed_parameter_ids.add(id_)
         if trial_job_id in _trial_history:
             _trial_history.pop(trial_job_id)
             if self.assessor is not None:
@@ -188,6 +194,9 @@ class MsgDispatcher(MsgDispatcherBase):
         """
         id_ = data['parameter_id']
         value = data['value']
+        if id_ in self._final_parameter_ids or id_ in self._failed_parameter_ids:
+            _logger.info('Ignoring duplicate or failed-trial final result: %s', id_)
+            return
         if id_ is None or id_ in _customized_parameter_ids:
             if not hasattr(self.tuner, '_accept_customized'):
                 self.tuner._accept_customized = False
@@ -200,6 +209,7 @@ class MsgDispatcher(MsgDispatcherBase):
         if id_ in _trial_params:
             self.tuner.receive_trial_result(id_, _trial_params[id_], value, customized=customized,
                                             trial_job_id=data.get('trial_job_id'))
+            self._final_parameter_ids.add(id_)
         else:
             _logger.warning('Find unknown job parameter id %s, maybe something goes wrong.', id_)
             _logger.warning('_trial_params %s', _trial_params)
@@ -253,4 +263,4 @@ class MsgDispatcher(MsgDispatcherBase):
         _logger.debug('Early stop notify tuner data: [%s]', data)
         data['type'] = MetricType.FINAL
         data['value'] = dump(data['value'])
-        self.enqueue_command(CommandType.ReportMetricData, data)
+        self.handle_report_metric_data(data)

@@ -1,24 +1,22 @@
-astor
-cloudpickle
-colorama
-filelock < 3.12
-json_tricks >= 3.15.5
-numpy < 1.22 ; python_version < "3.8"
-numpy ; python_version >= "3.8"
-nvidia-ml-py
-packaging
-pandas
-prettytable
-psutil
-PythonWebHDFS
-pyyaml >= 5.4
-requests
-responses
-schema
-scikit-learn >= 0.24.1
-scipy < 1.8 ; python_version < "3.8"
-scipy ; python_version >= "3.8"
-tqdm
-typeguard >= 3.0.0, < 4.1.3
-typing_extensions >= 4.7.0
-websockets >= 10.1
+astor==0.8.1
+cloudpickle==3.1.2
+colorama==0.4.6
+filelock==4.0.10
+json_tricks==3.17.3
+numpy==2.5.3
+nvidia-ml-py==13.615.71
+packaging==26.3
+pandas==3.0.6
+prettytable==3.18.0
+psutil==7.2.2
+PythonWebHDFS==0.2.3
+pyyaml==6.0.3
+requests==2.34.2
+responses==0.26.3
+schema==0.7.8
+scikit-learn==1.9.1
+scipy==1.18.1
+tqdm==4.70.1
+typeguard==4.6.0
+typing_extensions==4.16.0
+websockets==17.2

@@ -230,7 +230,7 @@ class NNIRestHandler {
 
     private getTrialJob(router: Router): void {
         router.get('/trial-jobs/:id', (req: Request, res: Response) => {
-            this.nniManager.getTrialJob(req.params['id']).then((jobDetail: TrialJobInfo) => {
+            this.nniManager.getTrialJob((req.params['id'] as string)).then((jobDetail: TrialJobInfo) => {
                 const jobInfo: TrialJobInfo = this.setErrorPathForFailedJob(jobDetail);
                 res.send(jobInfo);
             }).catch((err: Error) => {
@@ -251,7 +251,7 @@ class NNIRestHandler {
 
     private cancelTrialJob(router: Router): void {
         router.delete('/trial-jobs/:id', async (req: Request, res: Response) => {
-            this.nniManager.cancelTrialJobByUser(req.params['id']).then(() => {
+            this.nniManager.cancelTrialJobByUser((req.params['id'] as string)).then(() => {
                 res.send();
             }).catch((err: Error) => {
                 this.handleError(err, res);
@@ -260,8 +260,8 @@ class NNIRestHandler {
     }
 
     private getMetricData(router: Router): void {
-        router.get('/metric-data/:job_id*?', async (req: Request, res: Response) => {
-            this.nniManager.getMetricData(req.params['job_id'], req.query['type'] as MetricType).then((metricsData: MetricDataRecord[]) => {
+        router.get('/metric-data{/:job_id}', async (req: Request, res: Response) => {
+            this.nniManager.getMetricData((req.params['job_id'] as string), req.query['type'] as MetricType).then((metricsData: MetricDataRecord[]) => {
                 res.send(metricsData);
             }).catch((err: Error) => {
                 this.handleError(err, res);
@@ -271,8 +271,8 @@ class NNIRestHandler {
 
     private getMetricDataByRange(router: Router): void {
         router.get('/metric-data-range/:min_seq_id/:max_seq_id', async (req: Request, res: Response) => {
-            const minSeqId = Number(req.params['min_seq_id']);
-            const maxSeqId = Number(req.params['max_seq_id']);
+            const minSeqId = Number((req.params['min_seq_id'] as string));
+            const maxSeqId = Number((req.params['max_seq_id'] as string));
             this.nniManager.getMetricDataByRange(minSeqId, maxSeqId).then((metricsData: MetricDataRecord[]) => {
                 res.send(metricsData);
             }).catch((err: Error) => {
@@ -293,8 +293,8 @@ class NNIRestHandler {
 
     private getTrialFile(router: Router): void {
         router.get('/trial-file/:id/:filename', async(req: Request, res: Response) => {
-            const filename = req.params['filename'];
-            this.nniManager.getTrialFile(req.params['id'], filename).then((content: Buffer | string) => {
+            const filename = (req.params['filename'] as string);
+            this.nniManager.getTrialFile((req.params['id'] as string), filename).then((content: Buffer | string) => {
                 const contentType = content instanceof Buffer ? 'application/octet-stream' : 'text/plain';
                 res.header('Content-Type', contentType);
                 if (content === '') {
@@ -358,7 +358,7 @@ class NNIRestHandler {
 
     private getTensorboardTask(router: Router): void {
         router.get('/tensorboard/:id', (req: Request, res: Response) => {
-            this.tensorboardManager.getTensorboardTask(req.params['id']).then((taskDetail: TensorboardTaskInfo) => {
+            this.tensorboardManager.getTensorboardTask((req.params['id'] as string)).then((taskDetail: TensorboardTaskInfo) => {
                 res.send(Object.assign({}, taskDetail));
             }).catch((err: Error) => {
                 this.handleError(err, res);
@@ -368,7 +368,7 @@ class NNIRestHandler {
 
     private updateTensorboardTask(router: Router): void {
         router.put('/tensorboard/:id', (req: Request, res: Response) => {
-            this.tensorboardManager.updateTensorboardTask(req.params['id']).then((taskDetail: TensorboardTaskInfo) => {
+            this.tensorboardManager.updateTensorboardTask((req.params['id'] as string)).then((taskDetail: TensorboardTaskInfo) => {
                 res.send(Object.assign({}, taskDetail));
             }).catch((err: Error) => {
                 this.handleError(err, res);
@@ -378,7 +378,7 @@ class NNIRestHandler {
 
     private stopTensorboardTask(router: Router): void {
         router.delete('/tensorboard/:id', (req: Request, res: Response) => {
-            this.tensorboardManager.stopTensorboardTask(req.params['id']).then((taskDetail: TensorboardTaskInfo) => {
+            this.tensorboardManager.stopTensorboardTask((req.params['id'] as string)).then((taskDetail: TensorboardTaskInfo) => {
                 res.send(Object.assign({}, taskDetail));
             }).catch((err: Error) => {
                 this.handleError(err, res);

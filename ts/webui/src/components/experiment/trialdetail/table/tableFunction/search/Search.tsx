@@ -96,7 +96,7 @@ function Search(props: SearchProps): any {
         EXPERIMENT.isNestedExp() ? [] : Object.keys(EXPERIMENT.searchSpace)
     );
 
-    function renderParametersSearchComponent(item: IContextualMenuItem, dismissMenu: () => void): JSX.Element {
+    function renderParametersSearchComponent(item: IContextualMenuItem, dismissMenu: () => void): React.JSX.Element {
         return (
             <SearchParameterConditions
                 parameter={item.text ?? ''}
@@ -109,7 +109,7 @@ function Search(props: SearchProps): any {
         );
     }
 
-    function renderDefaultMetricSearchComponent(item: IContextualMenuItem, dismissMenu: () => void): JSX.Element {
+    function renderDefaultMetricSearchComponent(item: IContextualMenuItem, dismissMenu: () => void): React.JSX.Element {
         return (
             <SearchDefaultMetric
                 parameter={item.text ?? ''}
@@ -122,7 +122,7 @@ function Search(props: SearchProps): any {
         );
     }
 
-    function renderIdAndNoComponent(item: IContextualMenuItem, dismissMenu: () => void): JSX.Element {
+    function renderIdAndNoComponent(item: IContextualMenuItem, dismissMenu: () => void): React.JSX.Element {
         return (
             <GeneralSearch
                 searchName={item.text ?? ''}
